@@ -17,4 +17,12 @@ runTagTree html = sanitizeTree $ parseTree html
 
 --sanitize a html tree
 sanitizeTree :: [TagTree String] -> [TagTree String]
-sanitizeTree htmlTree = htmlTree
+sanitizeTree []           = []
+sanitizeTree ((TagBranch s a t):htmlTree) = case elem s disallowedTags of
+  True  -> sanitizeTree htmlTree
+  False ->  [TagBranch s a (sanitizeTree t)] ++ (sanitizeTree htmlTree)
+
+
+
+disallowedTags :: [String]
+disallowedTags = ["script"]
