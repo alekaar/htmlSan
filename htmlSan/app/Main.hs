@@ -4,6 +4,7 @@ import Lib
 import Text.HTML.TagSoup
 import Text.HTML.TagSoup.Tree
 import Data.List
+import Data.String.Utils
 
 main :: IO ()
 main = someFunc
@@ -14,14 +15,20 @@ runTags html = parseTags html
 
 --run sanitizer on tagTree structure
 runSanitizeHTML :: String -> [TagTree String]
-runSanitizeHTML html = sanitizeTree $ parseTree html
+runSanitizeHTML html = sanitizeTree $ parseTree
+                         $ replace "&gt;" ">" $ replace "&lt;" "<"
+                            $ strip html
 
 --sanitize a html TagTree
 --TODO maybe have to sanitize leaf and check for &lt; and &gt;
+--TODO sanitize other how other frameworks use script tags
+--TODO sanitize for more object oriented approach
+--TODO string to lower case
+--TODO strip whitespace inside beginning of tag, inside end of tag
 sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
-   [TagLeaf s]                  -> [TagLeaf s]
+   [TagLeaf (TagText s)]                  -> [TagLeaf (TagText s)]
    ((TagBranch s a t):htmlTree) -> case elem s disallowedTags of
      True  -> sanitizeTree htmlTree
      False -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)

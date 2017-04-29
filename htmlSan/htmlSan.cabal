@@ -26,6 +26,7 @@ executable htmlSan-exe
   build-depends:       base
                      , htmlSan
                      , tagsoup >= 0.14.1
+                     , MissingH >=  1.4.0.1
   default-language:    Haskell2010
 
 test-suite htmlSan-test
