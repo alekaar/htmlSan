@@ -1,6 +1,7 @@
 module Main where
 
 import Lib
+import Data.Char
 import Text.HTML.TagSoup
 import Text.HTML.TagSoup.Tree
 import Data.List
@@ -17,12 +18,11 @@ runTags html = parseTags html
 runSanitizeHTML :: String -> [TagTree String]
 runSanitizeHTML html = sanitizeTree $ parseTree
                          $ replace "&gt;" ">" $ replace "&lt;" "<"
-                            $ strip html
+                            $ strip $ map toLower html
 
 --sanitize a html TagTree
 --TODO sanitize other how other frameworks use script tags
---TODO sanitize for more object oriented approach
---TODO string to lower case
+--TODO sanitize for more object oriented approach ex "var img = new Image()"
 --TODO strip whitespace inside beginning of tag, inside end of tag
 --If a disallowed tag is found, drop the tag and move on to the next one.
 --If the tag is not disallowed, sanitize the values, the attributes,
