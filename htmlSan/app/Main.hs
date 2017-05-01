@@ -31,21 +31,9 @@ sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
    [TagLeaf (TagText s)]                  -> [TagLeaf (TagText s)]
-   (tag@(TagBranch s a t):htmlTree) -> case elem s disallowedTags of
-     True  -> (sanitizeTag tag):(sanitizeTree htmlTree)
-     False -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
-
---Sanitizes a HTML tag. Just dropping the tag is easier, but just dropping enough
---to disable the execution of javascript is even better.
---about iframe, would rather exclude it all together, but code gets ugly if it
---matches for it in a previous stage.
-sanitizeTag :: TagTree String -> TagTree String
-sanitizeTag inp@(TagBranch tag attrlist leaf) = case tag of
-    ("script") -> TagBranch "p" (sanitizeAttr attrlist) leaf
-    ("img")    -> TagBranch "img" (checkSrc attrlist) leaf
-    ("image")  -> TagBranch "image" (checkSrc attrlist) leaf
-    ("iframe") -> TagBranch "p" [] [TagLeaf (TagText "iframe not supported")]
-    otherwise  -> inp
+   (tag@(TagBranch s a t):htmlTree) -> case elem s allowedTags of
+     False -> sanitizeTree htmlTree
+     True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
 
 --sanitize attributes to html elements
 --If disallowed attribute is encountered, drop the attribute all together.
@@ -63,18 +51,6 @@ sanitizeVals ((attr, val):attrs) = case checkPrefix val disallowedVals of
   True -> sanitizeVals attrs
   _    -> (attr, val):(sanitizeVals attrs)
 
---checks that an image src is from an allowed origin
-checkSrc :: [(String, String)] -> [(String, String)]
-checkSrc ((a,b):rest) = case a of
-    ("src")   -> case isPrefixOf "http://" b of
-      True  -> case checkPrefix b allowedImgOrigin of
-        True  -> (a,b):rest
-        False -> rest
-      False -> case checkPrefix ("http://" ++ b) allowedImgOrigin of
-        True  -> (a,b):rest
-        False -> rest
-    otherwise -> (a,b):(checkSrc rest)
-
 --check if some disallowed value is a prefix of the supplied value
 checkPrefix :: String -> [String] -> Bool
 checkPrefix _ []         = False
@@ -88,13 +64,12 @@ script: The most obvious tag to block, can be used to run scripts directly.
 img/image: A faulty image source could potentially be dangerous.
 iframe: embed other HTML documents in this one, but there is no guarantee that that document is alright.
 -}
-disallowedTags :: [String]
-disallowedTags = ["script", "img", "image", "iframe"]
+allowedTags :: [String]
+allowedTags = ["div","p","h1","h2","h3","h4","h5","h6","ul","ol","li","hr","center","br","cite","b","table","img","tr","th","td","a"]
 
 --disallowed attributes to html elements
 {-
-onerror: Can be used in combination with a faulty img to run scripts.
-onmouseover: Can run scripts if clients mouse hover over element.
+All event attributes are ignored. Declared individually.
 -}
 disallowedAttr :: [String]
 disallowedAttr = windowObjectEvents ++ formEvents ++ keyboardEvents ++ mouseEvents ++ dragEvents ++ clipboardEvents ++ mediaEvents ++ miscEvents
@@ -129,10 +104,3 @@ alert: Makes a popup.
 -}
 disallowedVals :: [String]
 disallowedVals = ["alert"]
-
---when loading image sources, these are the allowed origins of images.
-{-
-
--}
-allowedImgOrigin :: [String]
-allowedImgOrigin = ["http://goodwebsite.com"]
