@@ -7,18 +7,23 @@ import Text.HTML.TagSoup.Tree
 import Data.List
 import Data.String.Utils
 
+--main :: IO ()
+--main = putStr
+
+
 main :: IO ()
-main = someFunc
+main  = do
+    contents <- readFile file
+    putStr $ show $ parseTree contents
 
-{-
-escapehtml :: String -> String
-escapehtml html = replace "<" "&lt;"
-                  $ replace ">" "&gt;"
-                  $ replace "/" "&#x2F;"
-                  $ replace "\"" "&quot;"
-                  $ replace "'" "&#x27;" html
--}
+file :: String
+file = "xss2.txt"
 
+--run escapehtml
+runEscapeHTML :: String -> String
+runEscapeHTML html = escapehtml $ replace "\"" "\'" $ map toLower html
+
+--turns tags into harmless signs
 escapehtml :: String -> String
 escapehtml [] = []
 escapehtml (c:html) = case c of
@@ -28,27 +33,24 @@ escapehtml (c:html) = case c of
   '\"' ->"&quot;" ++ (escapehtml html)
   '\'' -> "&#x27;" ++ (escapehtml html)
   _    -> c:(escapehtml html)
-{-
-escapeChar :: String -> String
-escapeChar c = case c of
-  "<" -> "&lt;"
-  ">" -> "&gt;"
-  "/" -> "&#x2F;"
-  "\"" ->"&quot;"
-  "'" -> "&#x27;"
--}
 
 --show tag strings structure
 runTags :: String -> [Tag String]
 runTags html = parseTags html
 
 --run sanitizer on tagTree structure
-runSanitizeHTML :: String -> [TagTree String]
-runSanitizeHTML html = sanitizeTree $ parseTree
-                         $ replace "&gt;" ">" $ replace "&lt;" "<"
-                            $ strip $ map toLower html
+runSanitizeHTML :: String -> String
+runSanitizeHTML html = renderTree
+                         $ sanitizeTree
+                         $ parseTree
+                         $ replace "&gt;" ">"
+                         $ replace "&lt;" "<"
+                         $ replace "\"" "\'"
+                         $ strip $ map toLower html
 
 --sanitize a html TagTree
+--TODO gives error when running contents of xss2.txt. Check with main function
+--TODO can't sanitize <IMG """><SCRIPT>alert("XSS")</SCRIPT>">, malformed xss
 --TODO sanitize other how other frameworks use script tags
 --TODO sanitize php commands, <php, <?, <?=, <%
 --TODO sanitize for more object oriented approach ex "var img = new Image()"
@@ -60,9 +62,10 @@ sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
    [TagLeaf (TagText s)]                  -> [TagLeaf (TagText s)]
-   (tag@(TagBranch s a t):htmlTree) -> case elem s allowedTags of
+   (TagBranch s a t):htmlTree -> case elem s allowedTags of
      False -> sanitizeTree htmlTree
      True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
+   _     -> error "error in sanitizeTree sucker"
 
 --sanitize attributes to html elements
 --if attribute is allowed, check further if it is an URI attribute.
@@ -80,15 +83,15 @@ sanitizeAttr ((attr, val):attrs) = case elem attr allowedAttributes of
 sanitizeVals :: [(String, String)] -> [(String, String)]
 sanitizeVals []                  = []
 sanitizeVals ((attr, val):attrs) = case checkPrefix val disallowedVals of
-  True -> sanitizeVals attrs
-  _    -> (attr, val):(sanitizeVals attrs)
+  True  -> sanitizeVals attrs
+  False -> (attr, val):(sanitizeVals attrs)
 
 --check if some disallowed value is a prefix of the supplied value
 checkPrefix :: String -> [String] -> Bool
 checkPrefix _ []         = False
 checkPrefix val (v:vals) = case isPrefixOf v val of
   False -> checkPrefix val vals
-  _     -> True
+  True  -> True
 
 --Checks that a URI is an actual URI, and not a javascript statement.
 {-
