@@ -10,6 +10,34 @@ import Data.String.Utils
 main :: IO ()
 main = someFunc
 
+{-
+escapehtml :: String -> String
+escapehtml html = replace "<" "&lt;"
+                  $ replace ">" "&gt;"
+                  $ replace "/" "&#x2F;"
+                  $ replace "\"" "&quot;"
+                  $ replace "'" "&#x27;" html
+-}
+
+escapehtml :: String -> String
+escapehtml [] = []
+escapehtml (c:html) = case c of
+  '<'  -> "&lt;" ++ (escapehtml html)
+  '>'  -> "&gt;" ++ (escapehtml html)
+  '/'  -> "&#x2F;" ++ (escapehtml html)
+  '\"' ->"&quot;" ++ (escapehtml html)
+  '\'' -> "&#x27;" ++ (escapehtml html)
+  _    -> c:(escapehtml html)
+{-
+escapeChar :: String -> String
+escapeChar c = case c of
+  "<" -> "&lt;"
+  ">" -> "&gt;"
+  "/" -> "&#x2F;"
+  "\"" ->"&quot;"
+  "'" -> "&#x27;"
+-}
+
 --show tag strings structure
 runTags :: String -> [Tag String]
 runTags html = parseTags html
@@ -22,6 +50,7 @@ runSanitizeHTML html = sanitizeTree $ parseTree
 
 --sanitize a html TagTree
 --TODO sanitize other how other frameworks use script tags
+--TODO sanitize php commands, <php, <?, <?=, <%
 --TODO sanitize for more object oriented approach ex "var img = new Image()"
 --TODO strip whitespace inside beginning of tag, inside end of tag
 --If a disallowed tag is found, drop the tag and move on to the next one.
@@ -81,7 +110,11 @@ img/image: A faulty image source could potentially be dangerous.
 iframe: embed other HTML documents in this one, but there is no guarantee that that document is alright.
 -}
 allowedTags :: [String]
-allowedTags = ["div","p","h1","h2","h3","h4","h5","h6","ul","ol","li","hr","center","br","cite","b","table","img","tr","th","td","a"]
+allowedTags = ["div","p","h1","h2","h3"
+               ,"h4","h5","h6","ul","ol"
+               ,"li","hr","center","br"
+               ,"cite","b","table","img"
+               ,"tr","th","td","a"]
 
 --allowed attributes to html elements
 {-
@@ -92,13 +125,18 @@ style: contains css styling.
 -}
 allowedAttributes :: [String]
 allowedAttributes = ["name","href","src", "style"]
-
 --attributes that takes/can take a URI as a value
+
 {-
 An URI can contain directives such as src='javascript:alert(1)'
 -}
 uriAttributes :: [String]
-uriAttributes = ["href","codebase","cite","background","action","longdesc","src","profile","usemap","classid","data","formaction","icon","manifest","poster"]
+uriAttributes = ["href","codebase","cite"
+                ,"background","action"
+                ,"longdesc","src","profile"
+                ,"usemap","classid","data"
+                ,"formaction","icon"
+                ,"manifest","poster"]
 
 --disallowed prefixes of values that can be assigned to attributes
 {-
