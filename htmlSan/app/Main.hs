@@ -10,6 +10,14 @@ import Data.String.Utils
 main :: IO ()
 main = someFunc
 
+escapehtml :: String -> String
+escapehtml html = replace "<" "&lt;"
+                  $ replace ">" "&gt;"
+                  $ replace "/" "&#x2F;"
+                  $ replace "\"" "&quot;"
+                  $ replace "'" "&#x27;" html
+
+
 --show tag strings structure
 runTags :: String -> [Tag String]
 runTags html = parseTags html
@@ -22,8 +30,10 @@ runSanitizeHTML html = sanitizeTree $ parseTree
 
 --sanitize a html TagTree
 --TODO sanitize other how other frameworks use script tags
+--TODO sanitize php commands, <php, <?, <?=, <%
 --TODO sanitize for more object oriented approach ex "var img = new Image()"
 --TODO strip whitespace inside beginning of tag, inside end of tag
+--TODO sanitize single tags, ex <p text='lol'/> to <p text='lol'></p>
 sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
