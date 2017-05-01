@@ -36,15 +36,18 @@ sanitizeTree tagtree = case tagtree of
      True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
 
 --sanitize attributes to html elements
---If disallowed attribute is encountered, drop the attribute all together.
+--if attribute is allowed, check further if it is an URI attribute.
+--if it is, check and make sure there is no javascript in the attribute.
+--if there is, remove it, else pass it along.
 sanitizeAttr :: [(String, String)] -> [(String, String)]
 sanitizeAttr []                  = []
-sanitizeAttr ((attr, val):attrs) = case elem attr disallowedAttr of
-  True -> sanitizeAttr attrs
-  _    -> (attr, val):(sanitizeAttr attrs)
+sanitizeAttr ((attr, val):attrs) = case elem attr allowedAttributes of
+  False     -> sanitizeAttr attrs
+  otherwise -> case elem attr uriAttributes of
+      True  -> (attr, (checkURI val)):(sanitizeAttr attrs)
+      False -> (attr, val):(sanitizeAttr attrs)
 
 --sanitize values that are assigned to attributes
---If disallowed value is encoutered, the value is dropped all together.
 sanitizeVals :: [(String, String)] -> [(String, String)]
 sanitizeVals []                  = []
 sanitizeVals ((attr, val):attrs) = case checkPrefix val disallowedVals of
@@ -58,6 +61,19 @@ checkPrefix val (v:vals) = case isPrefixOf v val of
   False -> checkPrefix val vals
   _     -> True
 
+--Checks that a URI is an actual URI, and not a javascript statement.
+{-
+Example: src='javascript:alert(1)'
+Result:  src=''
+
+Example: src='www.goodsite.com'
+Result:  src='www.goodsite.com'
+-}
+checkURI :: String -> String
+checkURI str = case isPrefixOf "javascript:" (map toLower str) of
+    True  -> []
+    False -> str
+
 --list of disallowed tags
 {-
 script: The most obvious tag to block, can be used to run scripts directly.
@@ -67,36 +83,22 @@ iframe: embed other HTML documents in this one, but there is no guarantee that t
 allowedTags :: [String]
 allowedTags = ["div","p","h1","h2","h3","h4","h5","h6","ul","ol","li","hr","center","br","cite","b","table","img","tr","th","td","a"]
 
---disallowed attributes to html elements
+--allowed attributes to html elements
 {-
-All event attributes are ignored. Declared individually.
+name: Specifies a name for the element
+href: takes an uri that links to an image in an img tag, for example.
+src: takes an uri that leads to a resource for the element.
+style: contains css styling.
 -}
-disallowedAttr :: [String]
-disallowedAttr = windowObjectEvents ++ formEvents ++ keyboardEvents ++ mouseEvents ++ dragEvents ++ clipboardEvents ++ mediaEvents ++ miscEvents
+allowedAttributes :: [String]
+allowedAttributes = ["name","href","src", "style"]
 
-windowObjectEvents:: [String]
-windowObjectEvents = ["onafterprint","onbeforeprint","onbeforeunload","onerror","onhashchange","onload","onmessage","onoffline","ononline","onpagehide","onpageshow","onpopstate","onresize","onstorage","onunload"]
-
-formEvents :: [String]
-formEvents = ["onblur","inchange","oncontextmenu","onfocus","oninput","oninvalid","onreset","onsearch","onselect","onsubmit"]
-
-keyboardEvents :: [String]
-keyboardEvents = ["onkeydown","onkeypress","onkeyup"]
-
-mouseEvents :: [String]
-mouseEvents = ["onclick","ondbclick","onmousedown","onmousemove","onmouseout","onmouseover","onmouseup","onmousewheel","onwheel"]
-
-dragEvents :: [String]
-dragEvents = ["ondrag","ondragend","ondragenter","ondragleave","ondragover","ondrop","onscroll"]
-
-clipboardEvents :: [String]
-clipboardEvents = ["oncopy","oncut","onpaste"]
-
-mediaEvents :: [String]
-mediaEvents = ["onabort","oncanplay","oncanplaythrough","oncuechange","ondurationchange","onemptied","onended","onerror","onloadeddata","onloadedmetadata","onloadstart","onpause","onplay","onplaying","onprogress","onratechange","onseeked","onseeking","onstalled","onsuspend","ontimeupdate","onvolumechange","onwaiting"]
-
-miscEvents :: [String]
-miscEvents = ["onshow","ontoggle"]
+--attributes that takes/can take a URI as a value
+{-
+An URI can contain directives such as src='javascript:alert(1)'
+-}
+uriAttributes :: [String]
+uriAttributes = ["href","codebase","cite","background","action","longdesc","src","profile","usemap","classid","data","formaction","icon","manifest","poster"]
 
 --disallowed prefixes of values that can be assigned to attributes
 {-
