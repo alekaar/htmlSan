@@ -97,7 +97,31 @@ onerror: Can be used in combination with a faulty img to run scripts.
 onmouseover: Can run scripts if clients mouse hover over element.
 -}
 disallowedAttr :: [String]
-disallowedAttr = ["onerror", "onmouseover"]
+disallowedAttr = windowObjectEvents ++ formEvents ++ keyboardEvents ++ mouseEvents ++ dragEvents ++ clipboardEvents ++ mediaEvents ++ miscEvents
+
+windowObjectEvents:: [String]
+windowObjectEvents = ["onafterprint","onbeforeprint","onbeforeunload","onerror","onhashchange","onload","onmessage","onoffline","ononline","onpagehide","onpageshow","onpopstate","onresize","onstorage","onunload"]
+
+formEvents :: [String]
+formEvents = ["onblur","inchange","oncontextmenu","onfocus","oninput","oninvalid","onreset","onsearch","onselect","onsubmit"]
+
+keyboardEvents :: [String]
+keyboardEvents = ["onkeydown","onkeypress","onkeyup"]
+
+mouseEvents :: [String]
+mouseEvents = ["onclick","ondbclick","onmousedown","onmousemove","onmouseout","onmouseover","onmouseup","onmousewheel","onwheel"]
+
+dragEvents :: [String]
+dragEvents = ["ondrag","ondragend","ondragenter","ondragleave","ondragover","ondrop","onscroll"]
+
+clipboardEvents :: [String]
+clipboardEvents = ["oncopy","oncut","onpaste"]
+
+mediaEvents :: [String]
+mediaEvents = ["onabort","oncanplay","oncanplaythrough","oncuechange","ondurationchange","onemptied","onended","onerror","onloadeddata","onloadedmetadata","onloadstart","onpause","onplay","onplaying","onprogress","onratechange","onseeked","onseeking","onstalled","onsuspend","ontimeupdate","onvolumechange","onwaiting"]
+
+miscEvents :: [String]
+miscEvents = ["onshow","ontoggle"]
 
 --disallowed prefixes of values that can be assigned to attributes
 {-
