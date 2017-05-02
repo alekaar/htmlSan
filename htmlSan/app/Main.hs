@@ -46,8 +46,20 @@ runSanitizeHTML html = renderTree
                          $ replace "&gt;" ">"
                          $ replace "&lt;" "<"
                          $ replace "\"" "\'"
-                         $ strip $ map toLower html
+                         $ strip
+                         $ map toLower
+                         $ removeTagWhiteSpace html
 
+removeTagWhiteSpace :: String -> String
+removeTagWhiteSpace [] = []
+removeTagWhiteSpace (t:' ':html) = case elem t leadingTags of
+  True -> t:(removeTagWhiteSpace html)
+  False -> t:' ':(removeTagWhiteSpace html)
+removeTagWhiteSpace (c:html) = c:(removeTagWhiteSpace html)
+
+
+leadingTags :: [Char]
+leadingTags = ['<', '>', '/']
 --sanitize a html TagTree
 --TODO gives error when running contents of xss2.txt. Check with main function
 --TODO can't sanitize <IMG """><SCRIPT>alert("XSS")</SCRIPT>">, malformed xss
@@ -65,7 +77,7 @@ sanitizeTree tagtree = case tagtree of
    (TagBranch s a t):htmlTree -> case elem s allowedTags of
      False -> sanitizeTree htmlTree
      True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
-   _     -> error "error in sanitizeTree sucker"
+   tag     -> tag
 
 --sanitize attributes to html elements
 --if attribute is allowed, check further if it is an URI attribute.
