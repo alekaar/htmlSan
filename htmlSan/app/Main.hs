@@ -14,7 +14,7 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStr $ show $ parseTree contents
+    putStrLn $ show $ parseTree contents
 
 file :: String
 file = "xss2.txt"
@@ -73,10 +73,11 @@ leadingTags = ['<', '>', '/']
 sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
-   [TagLeaf (TagText s)]                  -> [TagLeaf (TagText s)]
+  -- [TagLeaf (TagText s)]      -> [TagLeaf (TagText s)] --check if need sanitizing
    (TagBranch s a t):htmlTree -> case elem s allowedTags of
      False -> sanitizeTree htmlTree
-     True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)] ++ (sanitizeTree htmlTree)
+     True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
+                ++ (sanitizeTree htmlTree)
    tag     -> tag
 
 --sanitize attributes to html elements
