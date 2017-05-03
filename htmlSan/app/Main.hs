@@ -14,10 +14,10 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStrLn $ show $ parseTree contents
+    putStrLn $ show $ runSanitizeHTML contents
 
 file :: String
-file = "xss2.txt"
+file = "htmlSan/app/xss1.txt"
 
 --run escapehtml
 runEscapeHTML :: String -> String
@@ -64,8 +64,6 @@ leadingTags = ['<', '>', '/']
 --TODO gives error when running contents of xss2.txt. Check with main function
 --TODO can't sanitize <IMG """><SCRIPT>alert("XSS")</SCRIPT>">, malformed xss
 --TODO sanitize other how other frameworks use script tags
---TODO sanitize php commands, <php, <?, <?=, <%
--- NOTE NOTE ONTE ONTE NOTE No need to sanitize for php, it will not be executed at the client.
 --TODO sanitize for more object oriented approach ex "var img = new Image()"
 --TODO strip whitespace inside beginning of tag, inside end of tag
 --If a disallowed tag is found, drop the tag and move on to the next one.

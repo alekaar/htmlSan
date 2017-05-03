@@ -27,6 +27,7 @@ executable htmlSan-exe
                      , htmlSan
                      , tagsoup >= 0.14.1
                      , MissingH >=  1.4.0.1
+                     , regex-posix >= 0.95
   default-language:    Haskell2010
 
 test-suite htmlSan-test
