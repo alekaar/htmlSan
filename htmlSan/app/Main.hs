@@ -14,10 +14,10 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStrLn $ show $ runSanitizeHTML contents
+    putStrLn $ runSanitizeHTML contents
 
 file :: String
-file = "htmlSan/app/xss1.txt"
+file = "xss2.txt"
 
 --run escapehtml
 runEscapeHTML :: String -> String
@@ -72,12 +72,11 @@ leadingTags = ['<', '>', '/']
 sanitizeTree :: [TagTree String] -> [TagTree String]
 sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
-  -- [TagLeaf (TagText s)]      -> [TagLeaf (TagText s)] --check if need sanitizing
    (TagBranch s a t):htmlTree -> case elem s allowedTags of
      False -> sanitizeTree htmlTree
      True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
                 ++ (sanitizeTree htmlTree)
-   tag     -> tag
+   (TagLeaf attrs):rest -> (TagLeaf attrs):(sanitizeTree rest)
 
 --sanitize attributes to html elements
 --if attribute is allowed, check further if it is an URI attribute.
