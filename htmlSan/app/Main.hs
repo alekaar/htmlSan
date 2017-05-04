@@ -76,7 +76,8 @@ sanitizeTree tagtree = case tagtree of
      False -> sanitizeTree htmlTree
      True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
                 ++ (sanitizeTree htmlTree)
-   (TagLeaf attrs):rest -> (TagLeaf attrs):(sanitizeTree rest)
+   (TagLeaf (TagOpen t attrs)):rest -> (TagLeaf (TagOpen t(sanitizeAttr attrs))):(sanitizeTree rest)
+   (TagLeaf t):rest                 -> (TagLeaf t):(sanitizeTree rest)
 
 --sanitize attributes to html elements
 --if attribute is allowed, check further if it is an URI attribute.
