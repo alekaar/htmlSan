@@ -14,7 +14,7 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStrLn $ show $ parseTree contents
+    putStrLn $ renderSanitizedTree contents
 
 file :: String
 file = "xss2.txt"
@@ -38,10 +38,12 @@ escapehtml (c:html) = case c of
 runTags :: String -> [Tag String]
 runTags html = parseTags html
 
+renderSanitizedTree :: String -> String
+renderSanitizedTree html = renderTree $ runSanitizeHTML html
+
 --run sanitizer on tagTree structure
-runSanitizeHTML :: String -> String
-runSanitizeHTML html = renderTree
-                         $ sanitizeTree
+runSanitizeHTML :: String -> [TagTree String]
+runSanitizeHTML html =  sanitizeTree
                          $ parseTree
                          $ replace "&gt;" ">"
                          $ replace "&lt;" "<"
@@ -114,7 +116,7 @@ Example: src='www.goodsite.com'
 Result:  src='www.goodsite.com'
 -}
 checkURI :: String -> String
-checkURI str = case isPrefixOf "javascript:" (map toLower str) of
+checkURI str = case isInfixOf "javascript:" (map toLower str) of
     True  -> []
     False -> str
 
