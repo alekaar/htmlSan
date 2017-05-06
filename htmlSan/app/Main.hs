@@ -14,7 +14,7 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStrLn $ runSanitizeHTML contents
+    putStrLn $ show $ parseTree contents
 
 file :: String
 file = "xss2.txt"
