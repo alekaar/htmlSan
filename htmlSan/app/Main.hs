@@ -14,11 +14,13 @@ import Data.String.Utils
 main :: IO ()
 main  = do
     contents <- readFile file
-    putStrLn $ show $ renderSanitizedTree contents
+    putStrLn $ renderSanitizedTree contents
 
 
 file :: String
-file = "xss2.txt"
+file = "htmlSan/app/xss1.txt"
+
+
 
 --run escapehtml
 runEscapeHTML :: String -> String
@@ -118,7 +120,7 @@ Result:  src='www.goodsite.com'
 -}
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
-    True  -> []
+    True  -> "jav ascript:"
     False -> str
 
 --list of disallowed tags
