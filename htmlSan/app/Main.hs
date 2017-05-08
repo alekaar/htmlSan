@@ -121,9 +121,12 @@ Result:  src='www.goodsite.com'
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
     True  -> []
-    False -> case (escapehtml str) =~ "((http://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
+    False -> case (escapehtml str) =~ "((https://|http://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
       (a,"",c) -> ""
-      (a,b,c)  -> b ++ c
+      (a,b,c)  -> case c =~ "(/{1})([a-z])+(/{1}[a-z])*.{1}(php|js|html)(?([a-z]=[a-z]))?" :: (String, String, String) of
+        (d,"",f) -> ""
+        (d,e,f)  -> b ++ f
+-- "/hi/there/world/ass.js?id=3" =~ "/{1}[a-z]*(/{1}[a-z]*)*\\.{1}(js|php|html)(\\?)" :: (String, String, String)
 
 --list of disallowed tags
 {-
