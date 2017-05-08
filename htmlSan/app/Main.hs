@@ -6,6 +6,7 @@ import Text.HTML.TagSoup
 import Text.HTML.TagSoup.Tree
 import Data.List
 import Data.String.Utils
+import Text.Regex.Posix
 
 --main :: IO ()
 --main = putStr
@@ -32,7 +33,6 @@ escapehtml [] = []
 escapehtml (c:html) = case c of
   '<'  -> "&lt;" ++ (escapehtml html)
   '>'  -> "&gt;" ++ (escapehtml html)
-  '/'  -> "&#x2F;" ++ (escapehtml html)
   '\"' ->"&quot;" ++ (escapehtml html)
   '\'' -> "&#x27;" ++ (escapehtml html)
   _    -> c:(escapehtml html)
@@ -120,8 +120,10 @@ Result:  src='www.goodsite.com'
 -}
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
-    True  -> "jav ascript:"
-    False -> str
+    True  -> []
+    False -> case (escapehtml str) =~ "((http://){1}[a-z]{3}.{1}[a-z]+.{1}[a-z]{2,}(.{1}[a-z]+)?)" :: (String, String, String) of
+      (a,"",c) -> ""
+      (a,b,c)  -> b ++ c
 
 --list of disallowed tags
 {-
