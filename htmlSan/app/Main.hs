@@ -146,7 +146,6 @@ style: contains css styling.
 allowedAttributes :: [String]
 allowedAttributes = ["name","href","src", "style"]
 --attributes that takes/can take a URI as a value
-
 {-
 An URI can contain directives such as src='javascript:alert(1)'
 -}
