@@ -14,10 +14,20 @@ import Text.Regex.Posix
 
 main :: IO ()
 main  = do
-  --  contents <- readFile file
-    putStrLn $ renderSanitizedTree "<img href='http://www.facebook.com'></img>"
+  --runAllTests
+  contents <- readFile file
+  putStrLn $ renderSanitizedTree "<img href='http://www.facebook.com'></img>"
 
 
+--given input 1, runs all tests, shows result last to first
+runAllTests :: Int -> IO ()
+runAllTests 46 = putStrLn "done"
+runAllTests filenr = do
+  contents <- readFile ("htmlSan/app/test" ++ (show filenr) ++ ".txt")
+  runAllTests (filenr + 1)
+  putStrLn $ renderSanitizedTree contents
+
+--test
 file :: String
 file = "htmlSan/app/xss1.txt"
 
