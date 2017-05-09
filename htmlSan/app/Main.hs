@@ -61,6 +61,7 @@ runEscapeAllHTML html = escapeAllHTML $ map toLower html
 --Escapes all characters that may be used to cause XSS attacks
 -- &, <, >, ", ', `, , !, @, $, %, (, ), =, +, {, }, [, and ]
 escapeAllHTML :: String -> String
+escapeAllHTML []       = []
 escapeAllHTML (c:html) = case c of
   '<'  -> "&lt;"   ++ (escapeAllHTML html)
   '>'  -> "&gt;"   ++ (escapeAllHTML html)
@@ -242,27 +243,26 @@ uriAttributes = ["href","codebase","cite"
 allowedVals :: [String]
 allowedVals = []
 
--------------------------------------------------------------------------------------------
-
+--------------------------------------------System two-----------------------------------------
 sanitizeEscapeHTML :: [Tag String] -> String
 sanitizeEscapeHTML []     = []
 sanitizeEscapeHTML (x:xs) = case x of
   (TagText t)    -> (sanitizeText t) ++ (sanitizeEscapeHTML xs)
   (TagOpen t at) -> case elem t allowedTags of
     True  -> "<"    ++ t ++ (sanitizeEscapeAttr at) ++ ">"    ++ (sanitizeEscapeHTML xs)
-    False -> "&lt;" ++ t ++ (sanitizeEscapeAttr at) ++ "&gt;" ++ (sanitizeEscapeHTML xs)
+    False -> escapeAllHTML ("&lt;" ++ t ++ (sanitizeEscapeAttr at) ++ "&gt;") ++ (sanitizeEscapeHTML xs)
   (TagClose t)   -> case elem t allowedTags of
     True  -> "</"        ++ t ++ ">"    ++ (sanitizeEscapeHTML xs)
-    False -> "&lt;&#x2F" ++ t ++ "&gt;" ++ (sanitizeEscapeHTML xs)
+    False -> escapeAllHTML ("&lt;&#x2F" ++ t ++ "&gt;") ++ (sanitizeEscapeHTML xs)
   (TagComment t) -> "<!--" ++ t ++ "-->"
 
 sanitizeEscapeAttr :: [(String, String)] -> String
 sanitizeEscapeAttr [] = []
 sanitizeEscapeAttr ((x,y):xs) = case elem x allowedAttributes of
     True  -> case elem x uriAttributes of
-      True  -> " " ++ x ++ "=" ++ "\'" ++ (checkURI y) ++ "\' " ++ (sanitizeEscapeAttr xs)
-      False -> " " ++ x ++ "=" ++ "\'" ++ y ++ "\' " ++ (sanitizeEscapeAttr xs)
-    False -> " " ++ x ++ "&#61" ++ "\'" ++ y ++ "\' " ++ (sanitizeEscapeAttr xs)
+      True  -> " " ++ x ++ "=" ++ "\'" ++ (checkURI y) ++ "\'" ++ (sanitizeEscapeAttr xs)
+      False -> " " ++ x ++ "=" ++ "\'" ++ y ++ "\'" ++ (sanitizeEscapeAttr xs)
+    False -> escapeAllHTML (" " ++ x ++ "&#61" ++ "\'" ++ y ++ "\'") ++ (sanitizeEscapeAttr xs)
 
 sanitizeText :: String -> String
 sanitizeText text = case parseTags text of
