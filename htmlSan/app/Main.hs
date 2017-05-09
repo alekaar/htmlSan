@@ -160,7 +160,7 @@ Result:  src='www.goodsite.com'
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
     True  -> []
-    False -> case (escapeSimpleHTML str) =~ "((http://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
+    False -> case (escapeSimpleHTML str) =~ "((http://|https://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
       (a,"",c) -> ""
       (a,b,c)  -> b ++ c
 
