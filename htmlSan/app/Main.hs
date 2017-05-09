@@ -19,7 +19,7 @@ main  = do
   putStrLn $ renderSanitizedTree "<img href='http://www.facebook.com'></img>"
 
 
---given input 1, runs all tests, shows result last to first
+--given input 1, runs all owasp tests, shows result last to first
 runAllTests :: Int -> IO ()
 runAllTests 46 = putStrLn "done"
 runAllTests filenr = do
@@ -34,18 +34,48 @@ file = "htmlSan/app/xss1.txt"
 
 
 --run escapehtml
-runEscapeHTML :: String -> String
-runEscapeHTML html = escapehtml $ replace "\"" "\'" $ map toLower html
+runEscapeCommentHTML :: String -> String
+runEscapeCommentHTML html = escapeSimpleHTML $ map toLower html
 
 --turns tags into harmless signs
-escapehtml :: String -> String
-escapehtml [] = []
-escapehtml (c:html) = case c of
-  '<'  -> "&lt;" ++ (escapehtml html)
-  '>'  -> "&gt;" ++ (escapehtml html)
-  '\"' ->"&quot;" ++ (escapehtml html)
-  '\'' -> "&#x27;" ++ (escapehtml html)
-  _    -> c:(escapehtml html)
+escapeSimpleHTML :: String -> String
+escapeSimpleHTML [] = []
+escapeSimpleHTML (c:html) = case c of
+  '<'  -> "&lt;"   ++ (escapeSimpleHTML html)
+  '>'  -> "&gt;"   ++ (escapeSimpleHTML html)
+  '\"' -> "&quot;" ++ (escapeSimpleHTML html)
+  '\'' -> "&#x27;" ++ (escapeSimpleHTML html)
+  '&'  -> "&#38;"  ++ (escapeSimpleHTML html)
+  _    -> c:(escapeSimpleHTML html)
+
+--run the all dangerous char escaper
+runEscapeAllHTML :: String -> String
+runEscapeAllHTML html = escapeAllHTML $ map toLower html
+
+--Escapes all characters that may be used to cause XSS attacks
+-- &, <, >, ", ', `, , !, @, $, %, (, ), =, +, {, }, [, and ]
+escapeAllHTML :: String -> String
+escapeAllHTML (c:html) = case c of
+  '<'  -> "&lt;"   ++ (escapeAllHTML html)
+  '>'  -> "&gt;"   ++ (escapeAllHTML html)
+  '\"' -> "&quot;" ++ (escapeAllHTML html)
+  '\'' -> "&#x27;" ++ (escapeAllHTML html)
+  '/'  -> "&#x2F"  ++ (escapeAllHTML html)
+  ' '  -> "&#32;"  ++ (escapeAllHTML html)
+  '`'  -> "&#96;"  ++ (escapeAllHTML html)
+  '!'  -> "&#33;"  ++ (escapeAllHTML html)
+  '@'  -> "&#64;"  ++ (escapeAllHTML html)
+  '$'  -> "&#36;"  ++ (escapeAllHTML html)
+  '%'  -> "&#37;"  ++ (escapeAllHTML html)
+  '('  -> "&#40;"  ++ (escapeAllHTML html)
+  ')'  -> "&#41;"  ++ (escapeAllHTML html)
+  '='  -> "&#61;"  ++ (escapeAllHTML html)
+  '+'  -> "&#43;"  ++ (escapeAllHTML html)
+  '{'  -> "&#123;" ++ (escapeAllHTML html)
+  '}'  -> "&#125;" ++ (escapeAllHTML html)
+  '['  -> "&#91;"  ++ (escapeAllHTML html)
+  ']'  -> "&#93;"  ++ (escapeAllHTML html)
+  _    -> c:(escapeAllHTML html)
 
 --show tag strings structure
 runTags :: String -> [Tag String]
@@ -55,6 +85,7 @@ renderSanitizedTree :: String -> String
 renderSanitizedTree html = renderTree $ runSanitizeHTML html
 
 --run sanitizer on tagTree structure
+-- TODO maybe remove removeTagWhiteSpace, < script> does not work.
 runSanitizeHTML :: String -> [TagTree String]
 runSanitizeHTML html =  sanitizeTree
                          $ parseTree
@@ -76,11 +107,9 @@ removeTagWhiteSpace (c:html) = c:(removeTagWhiteSpace html)
 leadingTags :: [Char]
 leadingTags = ['<', '>', '/']
 --sanitize a html TagTree
---TODO gives error when running contents of xss2.txt. Check with main function
 --TODO can't sanitize <IMG """><SCRIPT>alert("XSS")</SCRIPT>">, malformed xss
 --TODO sanitize other how other frameworks use script tags
 --TODO sanitize for more object oriented approach ex "var img = new Image()"
---TODO strip whitespace inside beginning of tag, inside end of tag
 --If a disallowed tag is found, drop the tag and move on to the next one.
 --If the tag is not disallowed, sanitize the values, the attributes,
 --and move on to the next level of tree.
@@ -131,7 +160,7 @@ Result:  src='www.goodsite.com'
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
     True  -> []
-    False -> case (escapehtml str) =~ "((http://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
+    False -> case (escapeSimpleHTML str) =~ "((http://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
       (a,"",c) -> ""
       (a,b,c)  -> b ++ c
 
