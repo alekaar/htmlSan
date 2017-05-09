@@ -77,6 +77,30 @@ escapeAllHTML (c:html) = case c of
   ']'  -> "&#93;"  ++ (escapeAllHTML html)
   _    -> c:(escapeAllHTML html)
 
+escapeDisallowed :: String -> String
+escapeDisallowed [] = []
+escapeDisallowed (c:html) = case c of
+  '<' -> do
+    let (tag, rest) = splitOnFirstSpace html
+    case elemIndex ' ' tag of
+      Nothing -> c:tag ++ rest
+      _    -> case elem tag allowedTags of
+                True -> '<':tag ++ (escapeDisallowed rest)
+                _    -> "&lt;" ++ tag ++ (escapeDisallowed rest)
+  _   -> c:(escapeDisallowed html)
+
+
+splitOnFirst :: String -> String -> (String, String)
+splitOnFirst tag []       = (tag, [])
+splitOnFirst tag (c:html) = case c of
+  ' ' -> (tag ++ [c], html)
+  _   -> splitOnFirst (tag ++ [c]) html
+
+splitOnFirstSpace :: String -> (String, String)
+splitOnFirstSpace html = case elemIndex ' ' html of
+  Just x  -> splitAt x html
+  Nothing -> (html, [])
+
 --show tag strings structure
 runTags :: String -> [Tag String]
 runTags html = parseTags html
@@ -96,6 +120,7 @@ runSanitizeHTML html =  sanitizeTree
                          $ map toLower
                          $ removeTagWhiteSpace html
 
+--Obsolete
 removeTagWhiteSpace :: String -> String
 removeTagWhiteSpace [] = []
 removeTagWhiteSpace (t:' ':html) = case elem t leadingTags of
@@ -138,7 +163,7 @@ sanitizeAttr ((attr, val):attrs) = case elem attr allowedAttributes of
 --sanitize values that are assigned to attributes
 sanitizeVals :: [(String, String)] -> [(String, String)]
 sanitizeVals []                  = []
-sanitizeVals ((attr, val):attrs) = case checkPrefix val disallowedVals of
+sanitizeVals ((attr, val):attrs) = case checkPrefix val allowedVals of
   True  -> sanitizeVals attrs
   False -> (attr, val):(sanitizeVals attrs)
 
@@ -198,9 +223,22 @@ uriAttributes = ["href","codebase","cite"
                 ,"formaction","icon"
                 ,"manifest","poster"]
 
---disallowed prefixes of values that can be assigned to attributes
-{-
-alert: Makes a popup.
--}
-disallowedVals :: [String]
-disallowedVals = ["alert"]
+allowedVals :: [String]
+allowedVals = []
+
+
+sanitizeEscapeHTML :: [Tag String] -> String
+sanitizeEscapeHTML html = case parseTags html of
+  (TagText t):xs -> (leafTag t) ++ (sanitizeEscapeHTML xs)
+  (TagOpen t at):xs -> case elem t allowedTags of
+    True  -> "<" ++ t ++ (concatMap (\(a, v) -> " " ++ case elem a allowedAttributes of
+      True -> a ++ "=" ++ (checkURI v)) at)
+    False -> "&lt;" ++ t
+
+
+leafTag :: String -> String
+leafTag text = case parseTags text of
+  [TagText x] -> case x == text of
+    True -> text
+    _    -> sanitizeEscapeHTML text
+  _ -> text
