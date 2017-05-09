@@ -242,19 +242,35 @@ uriAttributes = ["href","codebase","cite"
 allowedVals :: [String]
 allowedVals = []
 
+-------------------------------------------------------------------------------------------
 
 sanitizeEscapeHTML :: [Tag String] -> String
-sanitizeEscapeHTML html = case parseTags html of
-  (TagText t):xs -> (leafTag t) ++ (sanitizeEscapeHTML xs)
-  (TagOpen t at):xs -> case elem t allowedTags of
-    True  -> "<" ++ t ++ (concatMap (\(a, v) -> " " ++ case elem a allowedAttributes of
-      True -> a ++ "=" ++ (checkURI v)) at)
-    False -> "&lt;" ++ t
+sanitizeEscapeHTML []     = []
+sanitizeEscapeHTML (x:xs) = case x of
+  (TagText t)    -> (sanitizeText t) ++ (sanitizeEscapeHTML xs)
+  (TagOpen t at) -> case elem t allowedTags of
+    True  -> "<"    ++ t ++ (sanitizeEscapeAttr at) ++ ">"    ++ (sanitizeEscapeHTML xs)
+    False -> "&lt;" ++ t ++ (sanitizeEscapeAttr at) ++ "&gt;" ++ (sanitizeEscapeHTML xs)
+  (TagClose t)   -> case elem t allowedTags of
+    True  -> "</"        ++ t ++ ">"    ++ (sanitizeEscapeHTML xs)
+    False -> "&lt;&#x2F" ++ t ++ "&gt;" ++ (sanitizeEscapeHTML xs)
+  (TagComment t) -> "<!--" ++ t ++ "-->"
+
+sanitizeEscapeAttr :: [(String, String)] -> String
+sanitizeEscapeAttr [] = []
+sanitizeEscapeAttr ((x,y):xs) = case elem x allowedAttributes of
+    True  -> case elem x uriAttributes of
+      True  -> " " ++ x ++ "=" ++ "\'" ++ (checkURI y) ++ "\' " ++ (sanitizeEscapeAttr xs)
+      False -> " " ++ x ++ "=" ++ "\'" ++ y ++ "\' " ++ (sanitizeEscapeAttr xs)
+    False -> " " ++ x ++ "&#61" ++ "\'" ++ y ++ "\' " ++ (sanitizeEscapeAttr xs)
+
+sanitizeText :: String -> String
+sanitizeText text = case parseTags text of
+  ((TagText res):[]) -> text
+  tags                 -> sanitizeEscapeHTML tags
 
 
-leafTag :: String -> String
-leafTag text = case parseTags text of
-  [TagText x] -> case x == text of
-    True -> text
-    _    -> sanitizeEscapeHTML text
-  _ -> text
+
+
+
+
