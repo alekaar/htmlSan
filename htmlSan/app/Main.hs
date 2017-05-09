@@ -19,6 +19,13 @@ main  = do
   putStrLn $ renderSanitizedTree "<img href='http://www.facebook.com'></img>"
 
 
+test :: String -> String
+test str = case str of
+  "<img>" -> "<script>"
+  otherwise -> "<poop>"
+
+
+
 --given input 1, runs all owasp tests, shows result last to first
 runAllTests :: Int -> IO ()
 runAllTests 46 = putStrLn "done"
@@ -45,7 +52,6 @@ escapeSimpleHTML (c:html) = case c of
   '>'  -> "&gt;"   ++ (escapeSimpleHTML html)
   '\"' -> "&quot;" ++ (escapeSimpleHTML html)
   '\'' -> "&#x27;" ++ (escapeSimpleHTML html)
-  '&'  -> "&#38;"  ++ (escapeSimpleHTML html)
   _    -> c:(escapeSimpleHTML html)
 
 --run the all dangerous char escaper
@@ -118,8 +124,13 @@ sanitizeTree []      = []
 sanitizeTree tagtree = case tagtree of
    (TagBranch s a t):htmlTree -> case elem s allowedTags of
      False -> sanitizeTree htmlTree
-     True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
+     True  -> case elem s uriTags of
+       False -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
                 ++ (sanitizeTree htmlTree)
+       True  -> case hasURI a of
+         True  -> [TagBranch s (sanitizeVals (sanitizeAttr a)) (sanitizeTree t)]
+                  ++ (sanitizeTree htmlTree)
+         False -> sanitizeTree htmlTree
    (TagLeaf (TagOpen t attrs)):rest -> (TagLeaf (TagOpen t(sanitizeAttr attrs))):(sanitizeTree rest)
    (TagLeaf t):rest                 -> (TagLeaf t):(sanitizeTree rest)
 
@@ -151,18 +162,20 @@ checkPrefix val (v:vals) = case isPrefixOf v val of
 
 --Checks that a URI is an actual URI, and not a javascript statement.
 {-
-Example: src='javascript:alert(1)'
-Result:  src=''
-
-Example: src='www.goodsite.com'
-Result:  src='www.goodsite.com'
 -}
 checkURI :: String -> String
 checkURI str = case isInfixOf "javascript:" (map toLower str) of
     True  -> []
-    False -> case (escapeSimpleHTML str) =~ "((http://|https://){1}[a-z]{3,}.{1}[a-z]+(.{1}[a-z]){1,2})" :: (String, String, String) of
+    False -> case (escapeSimpleHTML str) =~ "((http://|https://){1}[a-z]{3,}\\.{1}[a-z]+(\\.{1}[a-z]*){1,2})" :: (String, String, String) of
       (a,"",c) -> ""
-      (a,b,c)  -> b ++ c
+      (a,b,c)  -> case c =~ "(/[a-z]*(/[a-z]*)*.{1}(php|html|js){1}(\\?([a-z]*=[1234567890a-z]*)(&[a-z]*=[1234567890a-z]*)*)?)?" :: (String, String, String) of
+        (d,e,f)  -> b ++ e
+
+hasURI :: [(String,String)] -> Bool
+hasURI []         = False
+hasURI ((a,b):xs) = case elem a uriAttributes of
+    True  -> True
+    False -> hasURI xs
 
 --list of disallowed tags
 {-
@@ -176,6 +189,9 @@ allowedTags = ["div","p","h1","h2","h3"
                ,"li","hr","center","br"
                ,"cite","b","table","img"
                ,"tr","th","td","a"]
+
+uriTags :: [String]
+uriTags = ["img","a"]
 
 --allowed attributes to html elements
 {-
