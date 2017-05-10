@@ -19,10 +19,9 @@ main  = do
   contents <- readFile "insert filename"
   putStrLn contents
 ---------------------------- SYSTEM ONE --------------------------------------
-systemOne :: IO String -> IO ()
+systemOne :: String -> IO ()
 systemOne html = do
-    st <- html
-    let a = map toLower st
+    let a = map toLower html
     let b = runSanitizeHTML a
     let c = renderTree b
     putStrLn c
@@ -33,6 +32,7 @@ systemTwo html = do
     let c = sanitizeEscapeHTML b
     putStrLn c
 ------------------------------------------------------------------------------
+--This is for if we create a better tester
 testFiles :: [FilePath]
 testFiles = ["test1.txt", "test2.txt", "test3.txt", "test4.txt", "test5.txt",
              "test6.txt", "test7.txt", "test8.txt", "test9.txt", "test10.txt",
@@ -54,11 +54,23 @@ runTestFiles =
 ------------------------------------ system one ------------------------------
 
 --given input 1, runs all owasp tests, shows result last to first
-runAllTests :: Int -> IO ()
-runAllTests filenr = do
-  contents <- readFile ("htmlSan/app/test" ++ (show filenr) ++ ".txt")
-  runAllTests (filenr + 1)
-  --putStrLn $ systemOne contents
+runAllTestsOne :: Int -> IO ()
+runAllTestsOne 46 = putStrLn "done"
+runAllTestsOne filenr = do
+  contents <- readFile ("htmlSan/app/tests/test" ++ (show filenr) ++ ".txt")
+  systemOne contents
+  runAllTestsOne (filenr + 1)
+
+
+
+--given input 1, runs all owasp tests, shows result last to first
+runAllTestsTwo :: Int -> IO ()
+runAllTestsTwo 46 = putStrLn "done"
+runAllTestsTwo filenr = do
+  contents <- readFile ("htmlSan/app/tests/test" ++ (show filenr) ++ ".txt")
+  systemTwo contents
+  runAllTestsTwo (filenr + 1)
+
 
 --turns tags into harmless signs
 escapeSimpleHTML :: String -> String
