@@ -29,6 +29,7 @@ executable htmlSan-exe
                      , MissingH >=  1.4.0.1
                      , regex-compat >= 0.95.1
                      , regex-posix >= 0.95
+                     , directory >= 1.3
   default-language:    Haskell2010
 
 test-suite htmlSan-test
