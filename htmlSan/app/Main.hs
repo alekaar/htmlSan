@@ -28,7 +28,7 @@ systemOne html = do
 ---------------------------- SYSTEM TWO --------------------------------------
 systemTwo :: String -> IO ()
 systemTwo html = do
-    let b = parseTags html
+    let b = parseTags (map toLower html)
     let c = sanitizeEscapeHTML b
     putStrLn c
 ------------------------------------------------------------------------------
