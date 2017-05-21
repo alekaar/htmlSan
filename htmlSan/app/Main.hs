@@ -57,7 +57,7 @@ runTestFiles =
 runAllTestsOne :: Int -> IO ()
 runAllTestsOne 46 = putStrLn "done"
 runAllTestsOne filenr = do
-  contents <- readFile ("htmlSan/app/tests/test" ++ (show filenr) ++ ".txt")
+  contents <- readFile ("tests/test" ++ (show filenr) ++ ".txt")
   systemOne contents
   runAllTestsOne (filenr + 1)
 
@@ -67,7 +67,7 @@ runAllTestsOne filenr = do
 runAllTestsTwo :: Int -> IO ()
 runAllTestsTwo 46 = putStrLn "done"
 runAllTestsTwo filenr = do
-  contents <- readFile ("htmlSan/app/tests/test" ++ (show filenr) ++ ".txt")
+  contents <- readFile ("tests/test" ++ (show filenr) ++ ".txt")
   systemTwo contents
   runAllTestsTwo (filenr + 1)
 
@@ -105,8 +105,23 @@ sanitizeTree tagtree = case tagtree of
          True  -> [TagBranch s (sanitizeAttr a) (sanitizeTree t)]
                   ++ (sanitizeTree htmlTree)
          False -> sanitizeTree htmlTree
-   (TagLeaf (TagOpen t attrs)):rest -> (TagLeaf (TagOpen t(sanitizeAttr attrs))):(sanitizeTree rest)
-   (TagLeaf t):rest                 -> (TagLeaf t):(sanitizeTree rest)
+   (TagLeaf t):rest           -> sanitizeLeaf (TagLeaf t) ++ (sanitizeTree rest)
+
+-- sanitize a html TagLeaf
+sanitizeLeaf :: TagTree String -> [TagTree String]
+sanitizeLeaf leaf = case leaf of
+  (TagLeaf (TagOpen t attrs)) -> case elem t allowedTags of
+    True  -> case elem t uriTags of
+      True  ->  case hasURI attrs of
+        True  -> [TagLeaf (TagOpen t (sanitizeAttr attrs))]
+        False -> []
+      False -> [TagLeaf (TagOpen t (sanitizeAttr attrs))]
+    False -> []
+  (TagLeaf (TagClose t))      -> case elem t allowedTags of
+    True  -> [leaf]
+    False -> []
+  (TagLeaf (TagComment str))  -> []
+  otherwise                   -> [leaf]
 
 --sanitize attributes to html elements
 sanitizeAttr :: [(String, String)] -> [(String, String)]
